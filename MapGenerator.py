@@ -152,40 +152,16 @@ class Basemap2(Basemap):
 path = os.path.abspath(os.path.dirname(__file__))
 # Shorten path to one folder up
 path = path[:find_last(path,os.sep)]
-# Shorten path to one folder up
-path = path[:find_last(path,os.sep)]
-
-# Define what you will be plotting
-Category = 'Maximum'
-# Category = 'Average'
-
-# Make a code dictionary
-codeIn = open(path+os.sep+'Basemap Mapper'+os.sep+'Python'+os.sep+'CodeDict.txt','r')
-codeDict = {}
-for line in codeIn:
-	Columns = line.split('\t')
-	codeDict[Columns[0]] = Columns[1]
-codeIn.close()
-
-# Make a label dictionary
-labelIn = open(path+os.sep+'Basemap Mapper'+os.sep+'Python'+os.sep+'labelDict.txt','r')
-labelDict = {}
-for line in labelIn:
-	Columns = line.split('\t')
-	labelDict[Columns[0]] = [float(Columns[1]), float(Columns[2][:-1])]
-labelIn.close()
+dirFolder = path[find_last(path,os.sep)+1:]
+# # Shorten path to one folder up
+# path = path[:find_last(path,os.sep)]
 
 # # Get list of files to map
 # Create array to store names
 Files = []
-if Category == 'Maximum':
-	Q = 'max'
-	for file in glob.glob(path+os.sep+'Basemap Mapper'+os.sep+'Data'+os.sep+'GBIR Location Files'+os.sep+'Shapefiles- Maxes'+os.sep+'*.shp'):
-		Files.append(file)
-else:
-	Q = 'ave'
-	for file in glob.glob(path+os.sep+'Basemap Mapper'+os.sep+'Data'+os.sep+'GBIR Location Files'+os.sep+'Shapefiles- Aves'+os.sep+'*.shp'):
-		Files.append(file)
+Q = 'max'
+for file in glob.glob(path+os.sep+'Data'+os.sep+'*.shp'):
+	Files.append(file)
 
 # # Short circuit for testing
 # # Files = [Files[0], Files[41]]
@@ -212,20 +188,11 @@ for file in Files:
 	# Get imagery
 	map.arcgisimage(service='ESRI_Imagery_World_2D', xpixels = 1500, verbose= True)
 
-	# Read in the shp files
+	# Read in the static shp files
 	# ------------------------------------------------------
 	
-	# # Monitoring areas
-	# map.readshapefile(path+os.sep+'Mapping Files'+os.sep+'shp Files'+os.sep+'Monitoring Groups- Lat Long', 'MonitoringGroups', drawbounds = True, color='orangered', linewidth=1)
-
-	# # Pueblo boundary
-	# map.readshapefile(path+os.sep+'Mapping Files'+os.sep+'shp Files'+os.sep+'US Tribal Land'+os.sep+'LANL Pueblo Land- LatLong', 'Pueblo Boundary', drawbounds = True, color='orangered', linewidth=2)
-
-	# # Bandelier boundary
-	# map.readshapefile(path+os.sep+'Mapping Files'+os.sep+'shp Files'+os.sep+'Bandelier'+os.sep+'BandelierWilderness- LatLong', 'Bandelier', drawbounds = True, color='lime', linewidth=2, zorder=1)
-
 	# LANL boundary
-	map.readshapefile(path+os.sep+'Basemap Mapper'+os.sep+'shp Files'+os.sep+'LANL Boundary- LatLong', 'LANL Boundary', drawbounds = True, color='k', linewidth=2)
+	map.readshapefile(path+os.sep+'Static Files'+os.sep+'LANL Boundary- LatLong', 'LANL Boundary', drawbounds = True, color='k', linewidth=2)
 
 	# Define parameter from filename
 	Parameter = file[find_last(file,os.sep)+1:-4]
@@ -251,44 +218,6 @@ for file in Files:
 			color = 'lime'
 		# map.plot(Location[0], Location[1], marker='o', color=color, markersize=(abs(1-float(item['Q'+Q]))*8+5), markeredgewidth=1)
 		map.plot(item['x'], item['y'], marker='o', color=color, markersize=(abs(1-float(item['Q']))*8+5), markeredgewidth=1)
-
-		# Determine if label is above or below point for arrows
-		if labelDict[item['Location']][1] > 0:
-		
-			# Label points with Location
-			plt.annotate(item['Location'], xy=(item['x'],item['y']), 
-			xycoords='data',
-			xytext=(item['x']+labelDict[item['Location']][0], item['y']+labelDict[item['Location']][1]), 
-			textcoords='data', fontsize = 8, color = 'w', weight='heavy', 
-			verticalalignment='bottom', horizontalalignment='center'
-			)
-			
-			# Label points with Data
-			plt.annotate(round(item['Q'],2), xy=(item['x'],item['y']), 
-			xycoords='data',
-			xytext=(item['x']+labelDict[item['Location']][0], item['y']+labelDict[item['Location']][1]), 
-			textcoords='data', fontsize = 8, color = 'w', weight='normal', 
-			verticalalignment='top', horizontalalignment='center',
-			arrowprops=dict(arrowstyle="->", color='w')
-			)
-		else:
-			# Labels below points 
-			plt.annotate(item['Location'], xy=(item['x'],item['y']), 
-			xycoords='data',
-			xytext=(item['x']+labelDict[item['Location']][0], item['y']+labelDict[item['Location']][1]), 
-			textcoords='data', fontsize = 8, color = 'w', weight='heavy', 
-			verticalalignment='bottom', horizontalalignment='center',
-			arrowprops=dict(arrowstyle="->", color='w')
-			)
-			
-			# Label points with Data
-			plt.annotate(round(item['Q'],2), xy=(item['x'],item['y']), 
-			xycoords='data',
-			xytext=(item['x']+labelDict[item['Location']][0], item['y']+labelDict[item['Location']][1]), 
-			textcoords='data', fontsize = 8, color = 'w', weight='normal', 
-			verticalalignment='top', horizontalalignment='center',
-			)
-
 		
 	# ------------------------------------------------------
 	# ADD MAP ITEMS
@@ -307,22 +236,18 @@ for file in Files:
 	map.northArrow()
 
 	# Make a title
-	plt.title(Category+' Quotient Values for '+codeDict[Parameter[Parameter.find('-')+2:]][:-1]+' in the '+Parameter[:Parameter.find('-')]+' Aquifer.', fontname='Times New Roman', y=1.08, fontsize=14, color= 'k', fontweight='bold')
+	plt.title('Quotient Values for '+Parameter, fontname='Times New Roman', y=1.08, fontsize=14, color= 'k', fontweight='bold')
 
 	# # Make footnotes
 	# text(0.02*map.xmax,-700,'- Data acquired from Intellus (https://www.intellusnm.com/).' ,
 			# verticalalignment='center', horizontalalignment='left', fontname='Times New Roman', fontsize=12, color= 'k', fontweight='normal') 
-	# text(0.02*map.xmax,-1700,'- Quotients were derived by dividing '+Category.lower()+' measured concentrations by the respective UTL for the \n'+Parameter[:Parameter.find('-')].lower()+' aquifer.' ,
-			# verticalalignment='center', horizontalalignment='left', fontname='Times New Roman', fontsize=12, color= 'k', fontweight='normal') 
-	# text(0.02*map.xmax,-3000,'- Basemap (ESRI_Imagery_World_2D) Sources: Esri, DigitalGlobe, Earthstar Geographics, CNES/Airbus DS, \nGeoEye, USDA FSA, USGS, Aerogrid, IGN, IGP, and the GIS User Community.' ,
-			# verticalalignment='center', horizontalalignment='left', fontname='Times New Roman', fontsize=12, color= 'k', fontweight='normal') 
 		
-	# Check to make sure directory exists for writing data file
-	if not os.path.exists(path+os.sep+'Basemap Mapper'+os.sep+'Mapping'+os.sep+Category+os.sep):
-		os.makedirs(path+os.sep+'Basemap Mapper'+os.sep+'Mapping'+os.sep+Category+os.sep)
+	# Check to make sure directory exists for saving figure
+	if not os.path.exists(path+os.sep+'Output'+os.sep):
+		os.makedirs(path+os.sep+'Output'+os.sep)
 	
 	# Save figure
-	plt.savefig(path+os.sep+'Basemap Mapper'+os.sep+'Mapping'+os.sep+Category+os.sep+Parameter+'.png',dpi=500)
+	plt.savefig(path+os.sep+'Output'+os.sep+Parameter+'.png',dpi=500)
 
 	# plt.show()
 
