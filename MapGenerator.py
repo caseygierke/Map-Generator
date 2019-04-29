@@ -44,7 +44,7 @@ def drawRect(x1,y1,x,y, color, width):
 class Basemap2(Basemap):
 	def drawscale(self,length, yoffset=None):
 		"""draw a simple map scale from x1,y to x2,y in map projection 
-		coordinates, label it with actual distance in km""" 
+		coordinates, label it with actual distance in miles""" 
 		
 		# Define dimensions
 		x1,y1,x2,y,extra = 0.03*map.xmax, 0.03*map.xmax, 0.03*map.xmax+length, 0.05*map.xmax, 0.01*map.xmax
@@ -56,6 +56,7 @@ class Basemap2(Basemap):
 		yoffset = 0.01*map.ymax
 		lon1,lat1 = self(x1,y,inverse=True) 
 		lon2,lat2 = self(x2,y,inverse=True) 
+		
 		# Convert to map projection units
 		gc = pyproj.Geod(a=self.rmajor,b=self.rminor) 
 		
@@ -152,7 +153,7 @@ class Basemap2(Basemap):
 path = os.path.abspath(os.path.dirname(__file__))
 # Shorten path to one folder up
 path = path[:find_last(path,os.sep)]
-dirFolder = path[find_last(path,os.sep)+1:]
+# dirFolder = path[find_last(path,os.sep)+1:]
 # # Shorten path to one folder up
 # path = path[:find_last(path,os.sep)]
 
