@@ -22,6 +22,7 @@ from matplotlib.patches import Polygon
 from pylab import * 
 import os
 import glob
+import zipfile
 
 # ----------------------------------------
 # DEFINE FUNCTIONS
@@ -36,12 +37,12 @@ def find_last(s,t):
 			return last_pos
 		last_pos = pos
 
-def drawRect(x1,y1,x,y, color, width):
+# def drawRect(x1,y1,x,y, color, width):
 	poly = Polygon([[x1,y1], [x1+x,y1], [x1+x,y1+y], [x1,y1+y]],facecolor='w',edgecolor=color,linewidth=width)
 	plt.gca().add_patch(poly)
 
-# add drawscale method to Basemap class. 
-class Basemap2(Basemap):
+# # add drawscale method to Basemap class. 
+# class Basemap2(Basemap):
 	def drawscale(self,length, yoffset=None):
 		"""draw a simple map scale from x1,y to x2,y in map projection 
 		coordinates, label it with actual distance in miles""" 
@@ -153,14 +154,26 @@ class Basemap2(Basemap):
 path = os.path.abspath(os.path.dirname(__file__))
 # Shorten path to one folder up
 path = path[:find_last(path,os.sep)]
-# dirFolder = path[find_last(path,os.sep)+1:]
-# # Shorten path to one folder up
-# path = path[:find_last(path,os.sep)]
 
-# # Get list of files to map
+# Unzip the zipped static shp files
+for file in glob.glob(path+os.sep+'Static Files'+os.sep+'*.zip'):
+	zip_ref = zipfile.ZipFile(file, 'r')
+	zip_ref.extractall(path+os.sep+'Static Files'+os.sep)
+	zip_ref.close()
+
+# Get the name of the static file
+staticFile = glob.glob(path+os.sep+'Static Files'+os.sep+'*.shp')
+staticFile = staticFile[0]
+
+# Unzip the zipped dynamic shp files
+for file in glob.glob(path+os.sep+'Data'+os.sep+'*.zip'):
+	zip_ref = zipfile.ZipFile(file, 'r')
+	zip_ref.extractall(path+os.sep+'Data'+os.sep)
+	zip_ref.close()
+
 # Create array to store names
 Files = []
-Q = 'max'
+# Get list of files to map
 for file in glob.glob(path+os.sep+'Data'+os.sep+'*.shp'):
 	Files.append(file)
 
@@ -171,86 +184,42 @@ for file in glob.glob(path+os.sep+'Data'+os.sep+'*.shp'):
 # Loop through files
 # ------------------------------------------------------
 for file in Files:
-
+	
 	# Define the bounds of the map area
-	LongLeft = -106.4
-	LongRight = -106.15
-	LatBottom = 35.75
-	LatTop = 35.90
+	LongLeft = -110
+	LongRight = -102.5
+	LatBottom = 31
+	LatTop = 38
 	midLat = (LatBottom+LatTop)/2.0
 	midLong = (LongLeft+LongRight)/2.0
 
-	# Opent a figure for plotting
+	# Open a figure for plotting
 	plt.figure(figsize=(10, 8))
 
 	# Create the map object
-	map = Basemap2(llcrnrlon= LongLeft,llcrnrlat= LatBottom,urcrnrlon=LongRight,urcrnrlat=LatTop, projection='tmerc', lat_0 = midLat, lon_0 = midLong, epsg=3857)
+	map = Basemap(llcrnrlon= LongLeft,llcrnrlat= LatBottom,urcrnrlon=LongRight,urcrnrlat=LatTop, projection='tmerc', lat_0 = midLat, lon_0 = midLong, epsg=3857)
 
 	# Get imagery
 	map.arcgisimage(service='ESRI_Imagery_World_2D', xpixels = 1500, verbose= True)
 
 	# Read in the static shp files
-	# ------------------------------------------------------
-	
-	# LANL boundary
-	map.readshapefile(path+os.sep+'Static Files'+os.sep+'LANL Boundary- LatLong', 'LANL Boundary', drawbounds = True, color='k', linewidth=2)
+	map.readshapefile(staticFile[:-4], staticFile[find_last(staticFile,os.sep)+1:-4], drawbounds = True, color='k', linewidth=3)
 
-	# Define parameter from filename
-	Parameter = file[find_last(file,os.sep)+1:-4]
+	# Get the dynamic file name for naming and handling
+	fileName = file[find_last(file,os.sep)+1:-4]
 	
 	# Open data file
-	param_info = map.readshapefile(file[:-4], 'Param')
-
-	# Initiate a list to populate
-	locationList = []
-	# Loop through data file and plot data
-	for info, Location in zip(map.Param_info, map.Param):
-		# Make info into a list of dictionaries
-		locationList.append({'Location': info['Location'], 'x': Location[0], 'y': Location[1], 'Q': info['Q'+Q]})
-	
-	# Sort list by Q values
-	locationList = sorted(locationList, key = lambda i: abs(1-i['Q']), reverse=True)
-	
-	# Loop through sorted list
-	for item in locationList:
-		if float(item['Q']) > 1:
-			color = 'r'
-		else:
-			color = 'lime'
-		# map.plot(Location[0], Location[1], marker='o', color=color, markersize=(abs(1-float(item['Q'+Q]))*8+5), markeredgewidth=1)
-		map.plot(item['x'], item['y'], marker='o', color=color, markersize=(abs(1-float(item['Q']))*8+5), markeredgewidth=1)
+	param_info = map.readshapefile(file[:-4], fileName, drawbounds = True, color='w', linewidth=1.5)
 		
-	# ------------------------------------------------------
-	# ADD MAP ITEMS
-	# ------------------------------------------------------
-
-	# Define the length (in meters?)
-	length = 5950
-
-	# Add scale bar
-	map.drawscale(length) 
-
-	# Add legend
-	map.drawLegend(2500)
-
-	# Add north arrow
-	map.northArrow()
-
 	# Make a title
-	plt.title('Quotient Values for '+Parameter, fontname='Times New Roman', y=1.08, fontsize=14, color= 'k', fontweight='bold')
-
-	# # Make footnotes
-	# text(0.02*map.xmax,-700,'- Data acquired from Intellus (https://www.intellusnm.com/).' ,
-			# verticalalignment='center', horizontalalignment='left', fontname='Times New Roman', fontsize=12, color= 'k', fontweight='normal') 
+	plt.title(fileName, fontname='Times New Roman', y=1.08, fontsize=14, color= 'k', fontweight='bold')
 		
 	# Check to make sure directory exists for saving figure
 	if not os.path.exists(path+os.sep+'Output'+os.sep):
 		os.makedirs(path+os.sep+'Output'+os.sep)
 	
 	# Save figure
-	plt.savefig(path+os.sep+'Output'+os.sep+Parameter+'.png',dpi=500)
-
-	# plt.show()
+	plt.savefig(path+os.sep+'Output'+os.sep+fileName+'.png',dpi=500)
 
 	plt.close()
 	
