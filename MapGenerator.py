@@ -194,8 +194,8 @@ for file in Files:
 	midLong = (LongLeft+LongRight)/2.0
 
 	# Open a figure for plotting
-	plt.figure(figsize=(10, 8))
-
+	plt.figure(figsize=(8, 9))
+	
 	# Create the map object
 	map = Basemap(llcrnrlon= LongLeft,llcrnrlat= LatBottom,urcrnrlon=LongRight,urcrnrlat=LatTop, projection='tmerc', lat_0 = midLat, lon_0 = midLong, epsg=3857)
 
@@ -207,9 +207,9 @@ for file in Files:
 
 	# Get the dynamic file name for naming and handling
 	fileName = file[find_last(file,os.sep)+1:-4]
-	
+	print(fileName)
 	# Open data file
-	param_info = map.readshapefile(file[:-4], fileName, drawbounds = True, color='w', linewidth=1.5)
+	dynamicFile = map.readshapefile(file[:-4], fileName, drawbounds = True, color='w', linewidth=1.5)
 		
 	# Make a title
 	plt.title(fileName, fontname='Times New Roman', y=1.08, fontsize=14, color= 'k', fontweight='bold')
